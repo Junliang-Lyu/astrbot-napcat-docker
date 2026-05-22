@@ -10,6 +10,8 @@
 
 ## 变更内容
 
+### 补丁 A：图片兼容
+
 在 `handle_segment_reply` 方法入口处，新增非文本组件检测：
 
 ```diff
@@ -26,6 +28,20 @@
 
 回复链中只要有任意一个非 `Plain` 组件（图片、表情等），直接跳过分段逻辑，
 保持原始 chain 不变，图片正常发出。
+
+### 补丁 B：`/` 命令不分段
+
+紧接补丁 A 之后，再检测触发消息是否以 `/` 开头：
+
+```diff
++     input_text = event.message_str.strip() if event.message_str else ""
++     if input_text.startswith("/"):
++         logger.info("检测到命令消息（/开头），跳过自定义规则分段")
++         return
+```
+
+`/查看日程`、`/重写日程` 等指令的回复通常是结构化文本（带表格或换行），
+不应被分段，否则排版会被破坏。
 
 ## 适用版本
 

@@ -89,6 +89,24 @@ enhance unban @用户   # 手动解封
 
 ---
 
+### 6. 时段概率门（`main.py` · `_need_active_reply`）
+
+`model_choice` 主动回复模式下，叠加了一层时段过滤：
+
+```python
+hour = datetime.datetime.now().hour
+is_rest_time = 12 <= hour < 14 or 18 <= hour < 22   # 午休 + 晚间
+if not is_rest_time and random.random() > ar.possibility:
+    return False   # 非休息时段额外抽签，减少主动回复频率
+```
+
+- **午休（12–14）和晚间（18–22）**：正常走 `possibility` 概率，角色此时较活跃
+- **其他时段（深夜 / 清晨 / 白天上课）**：额外抽签，概率不足则直接跳过，降低打扰
+
+与 `life-scheduler` 的作息骨架配合，使主动回复频率与角色当日状态保持一致。
+
+---
+
 ## 原插件
 
 - 原始仓库：[astrbot_plugin_astrbot_enhance_mode](https://github.com/Soulter/astrbot_plugin_astrbot_enhance_mode)
