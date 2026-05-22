@@ -1,0 +1,50 @@
+{
+  "enabled": {
+    "description": "开启本地表情采集",
+    "type": "bool",
+    "default": false,
+    "hint": "建议保持关闭，需要采集时用 /表情采集 开启 临时打开。开启后监听收到的消息，只保存 mface/image 消息段的脱敏元数据。"
+  },
+  "silence_during_capture": {
+    "description": "采集期间静默拦截表情消息",
+    "type": "bool",
+    "default": true,
+    "hint": "开启后，采集到 mface/image 消息段时会阻止后续 LLM 回复，避免机器人评价每个表情。"
+  },
+  "auto_stop_seconds": {
+    "description": "自动关闭采集秒数",
+    "type": "int",
+    "default": 120,
+    "hint": "用 /表情采集 开启 后，本轮采集会在指定秒数后自动关闭。设为 0 表示不自动关闭。"
+  },
+  "capture_mface": {
+    "description": "采集 mface 商城/超级表情段",
+    "type": "bool",
+    "default": true,
+    "hint": "用于判断 NapCat 是否提供 emoji_id、emoji_package_id、key、summary 等可复用字段。"
+  },
+  "capture_image": {
+    "description": "采集 image 图片/动画表情段",
+    "type": "bool",
+    "default": true,
+    "hint": "只保存文件名、summary、URL 域名和路径尾部，不保存完整 URL 查询参数。"
+  },
+  "save_images": {
+    "description": "采集时保存图片本体",
+    "type": "bool",
+    "default": true,
+    "hint": "开启后会在采集时用临时图片 URL 下载图片/GIF 到本地 images/<标签>/ 目录，并在记录里写入 local_file。不会把完整 URL 写入 JSONL。"
+  },
+  "download_timeout_seconds": {
+    "description": "图片下载超时秒数",
+    "type": "int",
+    "default": 15,
+    "hint": "单张图片下载超时时间。网络较慢时可适当调大。"
+  },
+  "output_filename": {
+    "description": "采集结果文件名",
+    "type": "string",
+    "default": "mface_captures.jsonl",
+    "hint": "文件会保存在该插件的本地 plugin_data 目录下。为避免路径越界，只允许 .jsonl 文件名。"
+  }
+}

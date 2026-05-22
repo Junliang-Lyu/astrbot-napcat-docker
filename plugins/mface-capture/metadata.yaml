@@ -1,0 +1,6 @@
+name: astrbot_plugin_mface_capture
+desc: 本地 QQ 表情采集辅助，记录 mface/image 消息段脱敏元数据，并可保存图片/GIF 本体。
+help: 使用 /表情采集 状态 查看本地 jsonl 路径；使用 /表情采集 开启 或 /表情采集 关闭 临时切换采集。
+version: v0.2.2
+author: local
+repo: ""

@@ -1,0 +1,17 @@
+.env
+data/*
+!data/.gitkeep
+ntqq/*
+!ntqq/.gitkeep
+napcat/config/*
+!napcat/config/.gitkeep
+*.log
+*.bat
+项目运行基线_v0.1/
+知识库资料_*/
+persona_backups_v0_1/
+素材/
+README_QUICK_START.md
+scripts/__pycache__/
+.claude/
+*.pyc
