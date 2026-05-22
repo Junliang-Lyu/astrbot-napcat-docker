@@ -47,6 +47,7 @@ flowchart TD
         PERSONA["人设 system prompt ★\n目白阿尔丹 v2.4"]
         KB["知识库 RAG ★\n角色背景 / 世界观"]
         MEM["长期记忆\nlivingmemory 插件"]
+        SCHED["life-scheduler ★\n每日作息 / 日程注入"]
         LLM["LLM 推理\nDeepSeek / Ollama"]
     end
 
@@ -67,6 +68,7 @@ flowchart TD
     PERSONA --> LLM
     KB --> LLM
     MEM --> LLM
+    SCHED --> LLM
     LLM --> MEME
     MEME --> SEG
     SEG --> REPLY
@@ -76,7 +78,7 @@ flowchart TD
     classDef output fill:#dcfce7,stroke:#16a34a,color:#166534
 
     class G1,G2,MOD,BAN guard
-    class PERSONA,KB,MEM,LLM charAI
+    class PERSONA,KB,MEM,SCHED,LLM charAI
     class MEME,SEG output
 ```
 
@@ -120,6 +122,14 @@ flowchart TD
 AstrBot 默认 SQLite journal 模式在并发写入时偶发 `database is locked`，导致对话响应失败。
 对 `initialize()` 追加了 WAL 模式及五条性能 PRAGMA，消除了该问题。
 
+### ⑤ 角色日程插件（[`plugins/life-scheduler/`](plugins/life-scheduler/)）
+
+基于 astrbot_plugin_life_scheduler 改写，让角色拥有连续的"生活"状态：
+
+- **作息骨架**：按星期几生成固定日程框架（工作日上课+训练 / 周六轻量训练+自由 / 周日休息），约束 LLM 不生成脱离角色设定的内容
+- **角色事件系统**：30% 概率触发特殊事件，其中 50% 为角色间互动事件（从 Uma Musume 角色名册按权重抽取）
+- **时段概率门**：在 enhance-mode 中配合实现，午休和晚间恢复正常回复频率，深夜/上课时段降低主动回复概率
+
 ## 数据复盘
 
 > _待补充：运行天数、使用人数、消息量峰值、衰退曲线。_
@@ -162,8 +172,9 @@ AstrBot 默认 SQLite journal 模式在并发写入时偶发 `database is locked
 │   └── custome-segment-reply/    # 分段回复插件图片兼容修复
 │       └── PATCH.md
 ├── plugins/
-│   ├── enhance-mode/    # 骚扰防护：LLM 审核层 + 渐进式封禁（改自 astrbot_plugin_astrbot_enhance_mode）
-│   └── mface-capture/   # QQ 表情采集插件（原创）
+│   ├── enhance-mode/    # 骚扰防护：LLM 审核层 + 渐进式封禁 + 时段概率门（改自 astrbot_plugin_astrbot_enhance_mode）
+│   ├── mface-capture/   # QQ 表情采集插件（原创）
+│   └── life-scheduler/  # 角色日程注入：作息骨架 + 角色事件系统（改自 astrbot_plugin_life_scheduler）
 ├── docs/
 │   └── 表情系统与本地补丁记录_2026-05-15.md
 ├── data/
