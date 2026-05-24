@@ -1,6 +1,8 @@
 # QQ AI 聊天机器人本地部署模板
 
-> **已归档** — 本项目已完结，不再主动维护。代码完全开放，欢迎 Fork 后继续开发。
+> **Portfolio status** — 本项目核心部署模板和插件已完成，当前作为稳定作品集项目展示；后续改进方向记录在下方。
+
+English summary: Docker Compose template and plugin suite for local **AstrBot + NapCatQQ** AI chatbot deployment, with OneBot v11 WebSocket messaging, OpenAI-compatible LLM backends, local-only WebUI binding, moderation plugins, sticker capture, and SQLite WAL tuning.
 
 通过 Docker Compose 在本机一键部署 **AstrBot + NapCatQQ**，接入 OpenAI 兼容 API 或本地 Ollama，让 QQ 小号成为 AI 聊天机器人。
 
@@ -132,11 +134,11 @@ AstrBot 默认 SQLite journal 模式在并发写入时偶发 `database is locked
 
 ## 数据复盘
 
-> _待补充：运行天数、使用人数、消息量峰值、衰退曲线。_
-
 **初步观察：** 早期用户因新鲜感使用频率较高，新鲜感消退后使用意愿明显下降。
 在熟人社交（QQ）场景中，AI 聊天机器人缺乏持续使用的刚性需求，
 娱乐向机器人的留存率有天然上限。
+
+为保护隐私，公开仓库不包含 QQ 号、群号、原始聊天内容、API Key、WebSocket token 或运行时数据库。可公开复盘的指标建议只保留聚合层级，例如运行天数、测试群规模区间、消息量区间、主要故障类型和修复结果。
 
 ## 欢迎继续开发
 
