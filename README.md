@@ -35,8 +35,8 @@ The result is a reusable platform pattern for multi-user conversational agents: 
 - A multi-layer safety and interaction funnel: allow/deny enforcement, harassment interception, independent intent classification, progressive penalties, and time-window reply controls.
 - A from-scratch web data collection and knowledge-preparation pipeline for persona-grounded retrieval.
 - Time-aware, random-event persona behavior that keeps schedules and events within character constraints.
-- [`plugins/mface-capture/`](plugins/mface-capture/), a QQ sticker-capture replacement plugin that de-identifies captured message segments and supports emotion-label review.
-- Tests and operational configuration for de-identification, label binding, state expiry, isolation, local-only interfaces, container readiness, and SQLite behavior.
+- [`plugins/mface-capture/`](plugins/mface-capture/), a QQ sticker-capture replacement plugin whose JSONL metadata omits chat text and sender IDs, and which supports emotion-label review. Optional local media capture requires operator consent and retention controls.
+- Tests and operational configuration for JSONL metadata omission, label binding, state expiry, isolation, local-only interfaces, container readiness, and SQLite behavior.
 
 **Substantial extensions inspired by upstream AstrBot plugins**
 
@@ -99,6 +99,8 @@ graph LR
 
 `★ Project-specific or substantially redesigned contribution` · `Integrated capability` denotes framework or ecosystem functionality integrated into this system.
 
+`mface-capture` is a collection helper for later meme/sticker workflows; it is not part of the reply-rendering path.
+
 ```mermaid
 flowchart TD
     MSG(["Incoming channel message"])
@@ -122,13 +124,18 @@ flowchart TD
     end
 
     subgraph OUT["Channel output"]
-        STICKER["Sticker-aware output ★\nmeme_manager + mface-capture replacement plugin"]
+        STICKER["Sticker-aware output\nmeme_manager"]
         SEG["Segmented reply rendering\nimage compatibility patch"]
+    end
+
+    subgraph CAPTURE["Collection helper (separate from reply rendering)"]
+        MFACECAP["mface-capture ★\ncollect stickers for later workflows"]
     end
 
     REPLY(["Send channel reply"])
 
     MSG --> LIST
+    MSG -.-> MFACECAP
     LIST -->|Denied / banned| BLOCKED
     LIST -->|Allowed| HARASS
     HARASS --> CLASSIFY
