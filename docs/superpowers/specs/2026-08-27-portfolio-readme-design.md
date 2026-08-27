@@ -17,7 +17,7 @@ Reposition the repository as a strong Applied AI portfolio project: a multi-chan
 - Add `README.zh-CN.md` as a complete Chinese counterpart.
 - Put reciprocal language links at the top of both documents.
 - Mark the project as a completed portfolio project, not an archived or actively maintained product.
-- Keep the current deployment and safety instructions, but move them after the project value, evidence, architecture, contributions, and technology sections.
+- Preserve the existing deployment topology diagram, message-flow diagram, complete setup guide, troubleshooting, and safety instructions. Move the setup material after the project value, evidence, architecture, contributions, and technology sections; do not cut it.
 
 ## Claims and evidence
 
@@ -41,12 +41,12 @@ The English README will distinguish the scope of each claim:
 1. Project name, language links, portfolio status, and one-sentence value proposition.
 2. Outcome metrics and channel-validation scope.
 3. Problem statement: safe, context-aware AI interaction in multi-user chat environments.
-4. Layered message-flow architecture diagram.
+4. Retained and expanded architecture visuals: the Docker/QQ deployment topology plus the layered message-flow diagram. The flow will show allow/deny lists, harassment interception, lightweight/local-model classification, long-context persona generation, RAG, memory, time/event behavior, and segmented/sticker output.
 5. Applied AI capabilities: persona, web-sourced knowledge preparation, RAG, long-term memory, routing, and time/event-aware behavior.
 6. Reliability, privacy, and safety controls.
 7. User-informed iteration with anonymized aggregate survey results.
 8. Technology stack grouped by responsibility.
-9. Ownership/attribution notes, project layout, setup guide, safety guide, and references.
+9. Ownership/attribution notes, project layout, the preserved full setup guide, troubleshooting, safety guide, and references.
 
 ## Privacy requirements
 
