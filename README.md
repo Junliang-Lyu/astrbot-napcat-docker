@@ -1,157 +1,167 @@
-# QQ AI 聊天机器人本地部署模板
+# Multi-Channel AI Chatbot Platform
 
-> **已归档** — 本项目已完结，不再主动维护。代码完全开放，欢迎 Fork 后继续开发。
+[简体中文](README.zh-CN.md)
 
-通过 Docker Compose 在本机一键部署 **AstrBot + NapCatQQ**，接入 OpenAI 兼容 API 或本地 Ollama，让 QQ 小号成为 AI 聊天机器人。
+**Portfolio status: core implementation complete.**
 
-## 架构图
+A multi-user AI chatbot platform designed to make character-driven LLM interactions safe, useful, and operable in real communities. It combines policy-aware message handling, provider routing, long-context persona generation, retrieval-augmented knowledge, long-term preferences and memories, and deployment controls that keep a local bot dependable under real group-chat load.
 
-### 部署拓扑
+QQ is the production-tested reference deployment. Discord has also completed end-to-end deployment and validation, demonstrating the platform's multi-channel design without overstating long-running Discord operating data.
+
+## Why this platform
+
+Single-user chatbot demos do not capture the hard parts of a community bot: one shared system must distinguish permitted users and unsafe messages, maintain a coherent persona over many turns, respect group context and user boundaries, and continue replying when several people interact with it. This project treats those concerns as one applied-AI system rather than as separate features.
+
+The result is a reusable platform pattern for multi-user conversational agents: route each message through safety and interaction controls first, enrich an appropriate response with persona, retrieval, and memory context, then render an output suitable for the target channel.
+
+## Operational evidence
+
+- **Production-tested QQ reference deployment:** operated in a community with **5,000+ members**.
+- **Observed operating period:** **5,689 requests over 22 days**, with **300+ active users** during that period.
+- **Discord:** end-to-end deployment and validation completed; no claim is made for long-running Discord metrics.
+- **Database reliability:** SQLite WAL plus targeted PRAGMA tuning resolved observed `database is locked` contention under multi-user load, without introducing new infrastructure.
+
+## Applied AI system design
+
+- **Multi-turn persona:** long-context system prompts keep character behavior consistent across conversations, with time-aware schedules and randomized events that give the persona bounded, believable state.
+- **Knowledge preparation and RAG:** project-specific web data collection and knowledge preparation feed retrieval-augmented context for character background and world knowledge.
+- **Long-term memory:** user preferences and persistent memories are incorporated into responses with explicit interaction boundaries. RAG and memory deeply integrate and extend existing framework/plugin capabilities rather than being represented as a framework built from scratch.
+- **Model routing:** the platform supports OpenAI-compatible providers and local models, allowing separate lightweight/local classification and response-generation paths.
+
+## Original contributions and extensions
+
+**Project-specific**
+
+- A multi-layer safety and interaction funnel: allow/deny enforcement, harassment interception, independent intent classification, progressive penalties, and time-window reply controls.
+- A from-scratch web data collection and knowledge-preparation pipeline for persona-grounded retrieval.
+- Time-aware, random-event persona behavior that keeps schedules and events within character constraints.
+- [`plugins/mface-capture/`](plugins/mface-capture/), a QQ sticker-capture replacement plugin whose JSONL metadata omits chat text and sender IDs, and which supports emotion-label review. For deployments that enable optional local media capture, operator consent and retention controls are operational requirements; they are not enforced access controls in the plugin.
+- Tests and operational configuration for JSONL metadata omission, label binding, state expiry, isolation, local-only interfaces, container readiness, and SQLite behavior.
+
+**Substantial extensions inspired by upstream AstrBot plugins**
+
+- [`plugins/enhance-mode/`](plugins/enhance-mode/) substantially redesigns and extends `astrbot_plugin_astrbot_enhance_mode`. Its core safety funnel and progressive enforcement behavior were user-designed.
+- [`plugins/life-scheduler/`](plugins/life-scheduler/) substantially redesigns and extends `astrbot_plugin_life_scheduler`. Its core schedule and event behavior were user-designed.
+
+**Integrated capabilities**
+
+- AstrBot provides the multi-platform LLM and plugin framework; its ecosystem capabilities are integrated and extended here for RAG, memory, persona delivery, and channel adapters.
+- OneBot v11 and NapCatQQ provide the QQ messaging integration used by the reference deployment.
+
+## Reliability, privacy, and safety
+
+- AstrBot and NapCat WebUIs bind to `127.0.0.1`; they are not exposed to the LAN by default.
+- OneBot traffic remains on the Docker-internal network rather than being mapped to a host port.
+- Container health-check dependencies prevent NapCat from starting before AstrBot is ready.
+- `.env` and runtime data remain excluded from version control.
+- SQLite WAL and targeted PRAGMA tuning address observed lock contention under multi-user writes.
+- Raw survey data is not public.
+
+## User-informed iteration
+
+The interaction model was informed by **25 anonymized responses from 44 views** (about a **57% response rate**). **16 of 25 respondents (64%)** prioritized reliable reactive replies, while **15 of 25 (60%)** valued long-term preferences and memories. That feedback led to a passive-first, controllable interaction model and clear boundaries around when memory is used.
+
+## Tech stack
+
+- **Application and tests:** Python, pytest
+- **Agent framework:** AstrBot multi-platform LLM and plugin framework
+- **Channels and protocol:** NapCatQQ, OneBot v11
+- **Models:** OpenAI-compatible APIs, DeepSeek, and local Ollama models
+- **Knowledge and memory:** FAISS/RAG and integrated long-term memory capabilities
+- **Persistence:** SQLite with WAL tuning
+- **Operations:** Docker Compose, health checks, `.env` configuration
+
+## Architecture context
+
+### Reference deployment topology (QQ)
 
 ```mermaid
 graph LR
-    User(["QQ 用户"])
-    QQSrv["QQ 服务器"]
+    User(["QQ users"])
+    QQSrv["QQ servers"]
 
-    subgraph compose["本机 Docker Compose"]
+    subgraph compose["Local Docker Compose"]
         NapCat["NapCatQQ\nWebUI: 127.0.0.1:6099 ①"]
-        AstrBot["AstrBot\nWebUI: 127.0.0.1:6185 ①\nSQLite WAL 模式 ②"]
+        AstrBot["AstrBot\nWebUI: 127.0.0.1:6185 ①\nSQLite WAL + PRAGMA tuning ②"]
     end
 
-    LLM(["LLM 服务\nDeepSeek / Ollama"])
+    LLM(["LLM providers\nDeepSeek / Ollama / OpenAI-compatible APIs"])
 
-    User <-->|QQ 消息| QQSrv
-    QQSrv <-->|NTQQ 协议| NapCat
-    NapCat -->|"OneBot v11 WS\n仅 Docker 内网 ①"| AstrBot
-    AstrBot <-->|OpenAI 兼容 API| LLM
+    User <-->|QQ messages| QQSrv
+    QQSrv <-->|NTQQ protocol| NapCat
+    NapCat -->|"OneBot v11 WebSocket\nDocker-internal network only ①"| AstrBot
+    AstrBot <-->|OpenAI-compatible API| LLM
 ```
 
-① [安全隔离](#本项目贡献点)　② [SQLite WAL 优化](#本项目贡献点)
+① [Local-only and internal-network isolation](#reliability-privacy-and-safety) ② [SQLite reliability tuning](#reliability-privacy-and-safety)
 
-### 消息处理流水线
+### Message-processing flow
+
+`★ Project-specific or substantially redesigned contribution` · `Integrated capability` denotes framework or ecosystem functionality integrated into this system.
+
+`mface-capture` is a collection helper for later meme/sticker workflows; it is not part of the reply-rendering path.
 
 ```mermaid
 flowchart TD
-    MSG(["收到 QQ 消息"])
+    MSG(["Incoming channel message"])
 
-    subgraph GUARD["防护层（AstrBot 插件钩子）"]
-        G1["guard_banned_user\npriority 9999"]
-        G2["guard_harassment ★\npriority 9998"]
-        MOD["_moderate_message\n独立 LLM 意图分类 ★"]
-        BAN["ban_control ★\n计数封禁：30分→1时→1天\n14天无违规自动衰减"]
+    subgraph GUARD["Multi-user safety and interaction funnel"]
+        LIST["Allow / deny list enforcement\nguard_banned_user · priority 9999"]
+        HARASS["Harassment interception ★\nguard_harassment · priority 9998"]
+        CLASSIFY["Lightweight/local-model intent classification ★\n_safe / abuse / harassment_"]
+        ENFORCE["Progressive enforcement ★\n30 min → 1 hr → 1 day\n14-day offence decay"]
+        WINDOW["Time-window interaction controls ★\npassive-first reply behavior"]
     end
 
-    BLOCKED(["拦截 / 静默"])
+    BLOCKED(["Intercept / silent"])
 
-    subgraph CHAR["角色 AI 层"]
-        PERSONA["人设 system prompt ★\n目白阿尔丹 v2.4"]
-        KB["知识库 RAG ★\n角色背景 / 世界观"]
-        MEM["长期记忆\nlivingmemory 插件"]
-        SCHED["life-scheduler ★\n每日作息 / 日程注入"]
-        LLM["LLM 推理\nDeepSeek / Ollama"]
+    subgraph CHAR["Persona and knowledge layer"]
+        PERSONA["Long-context persona generation ★\ncharacter system prompt"]
+        RAG["Knowledge RAG\ncharacter background / world context\nIntegrated capability + project preparation"]
+        MEMORY["Long-term memories and preferences\nIntegrated capability"]
+        SCHED["Time- and event-aware persona behavior ★\nschedule injection + random events"]
+        LLM["Response LLM routing\nDeepSeek / Ollama / compatible APIs"]
     end
 
-    subgraph OUT["回复输出"]
-        MEME["meme_manager\n情绪表情图片 ★"]
-        SEG["custome_segment_reply\n图片兼容补丁 ★"]
+    subgraph OUT["Channel output"]
+        STICKER["Sticker-aware output\nmeme_manager"]
+        SEG["Segmented reply rendering\nimage compatibility patch"]
     end
 
-    REPLY(["发送回复"])
+    subgraph CAPTURE["Collection helper (separate from reply rendering)"]
+        MFACECAP["mface-capture ★\ncollect stickers for later workflows"]
+    end
 
-    MSG --> G1
-    G1 -->|已封禁| BLOCKED
-    G1 -->|通过| G2
-    G2 --> MOD
-    MOD -->|辱骂 / 骚扰| BAN
-    BAN --> BLOCKED
-    MOD -->|安全| PERSONA
+    REPLY(["Send channel reply"])
+
+    MSG --> LIST
+    MSG -.-> MFACECAP
+    LIST -->|Denied / banned| BLOCKED
+    LIST -->|Allowed| HARASS
+    HARASS --> CLASSIFY
+    CLASSIFY -->|Abuse / harassment| ENFORCE
+    ENFORCE --> BLOCKED
+    CLASSIFY -->|Safe| WINDOW
+    WINDOW -->|Do not engage| BLOCKED
+    WINDOW -->|Reply| PERSONA
     PERSONA --> LLM
-    KB --> LLM
-    MEM --> LLM
-    SCHED --> LLM
-    LLM --> MEME
-    MEME --> SEG
+    RAG --> LLM
+    MEMORY --> LLM
+    SCHED --> PERSONA
+    LLM --> STICKER
+    STICKER --> SEG
     SEG --> REPLY
 
     classDef guard fill:#fef3c7,stroke:#d97706,color:#92400e
     classDef charAI fill:#dbeafe,stroke:#3b82f6,color:#1e40af
     classDef output fill:#dcfce7,stroke:#16a34a,color:#166534
 
-    class G1,G2,MOD,BAN guard
-    class PERSONA,KB,MEM,SCHED,LLM charAI
-    class MEME,SEG output
+    class LIST,HARASS,CLASSIFY,ENFORCE,WINDOW guard
+    class PERSONA,RAG,MEMORY,SCHED,LLM charAI
+    class STICKER,SEG output
 ```
 
-> **图例**：黄色 = 防护层　蓝色 = 角色 AI　绿色 = 回复输出　★ = 本项目新增 / 改造
-
-## 技术栈
-
-- **AstrBot** — AI 机器人框架，支持多模型、角色人格、插件扩展
-- **NapCatQQ** — 基于 NTQQ 的 QQ 协议实现
-- **OneBot v11** — 机器人通信协议，NapCat 作反向 WebSocket 客户端连接 AstrBot
-- **Docker Compose** — 双容器编排，桥接网络隔离，healthcheck 保障启动顺序
-- **OpenAI 兼容 API** — 支持 DeepSeek、本地 Ollama 等多种 LLM 后端
-
-## 本项目贡献点
-
-### ① 骚扰防护体系（[`plugins/enhance-mode/`](plugins/enhance-mode/)）
-
-基于 astrbot_plugin_astrbot_enhance_mode 扩展，新增：
-
-- **LLM 审核层**：消息进入角色 LLM 前，先用独立 LLM 调用做意图分类（安全 / 辱骂 / 性骚扰），管理员豁免
-- **渐进式封禁**：首次 30 分钟 → 再犯 1 小时 → 三犯起 1 天，14 天无违规自动衰减归零，SQLite 跨会话持久化
-- **LLM 工具改造**：`enhance_ban_user` 移除 duration 参数，时长完全由前科计数自动决定；新增 `enhance_get_offense_count` 让角色可主动查询前科
-
-### ② QQ 表情采集插件（[`plugins/mface-capture/`](plugins/mface-capture/)）
-
-从零写的 AstrBot 插件，让角色能用 QQ 表情包回复：
-
-- 采集用户发来的 `mface` / `image` 消息段并落盘，数据脱敏（不保存 QQ 号、群号、URL 鉴权参数）
-- 配套 `generate_mface_label_manifest.py` 生成带情绪标签的 CSV，供批量核查和手动补标
-- 配套单元测试覆盖脱敏逻辑、标签绑定、`CaptureState` 自动过期和 source_origin 隔离
-
-### ③ 安全隔离配置
-
-- WebUI 端口（6099、6185）绑定 `127.0.0.1`，不暴露到局域网
-- OneBot 通信端口（6199）仅在 Docker 内部网络存在，不映射到宿主机
-- NapCat 容器等待 AstrBot 健康就绪后再启动（`condition: service_healthy`）
-- `.env` 与运行时数据通过 `.gitignore` 完全排除出版本控制
-
-### ④ SQLite WAL 模式优化（[`patches/astrbot-sqlite-wal/`](patches/astrbot-sqlite-wal/)）
-
-AstrBot 默认 SQLite journal 模式在并发写入时偶发 `database is locked`，导致对话响应失败。
-对 `initialize()` 追加了 WAL 模式及五条性能 PRAGMA，消除了该问题。
-
-### ⑤ 角色日程插件（[`plugins/life-scheduler/`](plugins/life-scheduler/)）
-
-基于 astrbot_plugin_life_scheduler 改写，让角色拥有连续的"生活"状态：
-
-- **作息骨架**：按星期几生成固定日程框架（工作日上课+训练 / 周六轻量训练+自由 / 周日休息），约束 LLM 不生成脱离角色设定的内容
-- **角色事件系统**：30% 概率触发特殊事件，其中 50% 为角色间互动事件（从 Uma Musume 角色名册按权重抽取）
-- **时段概率门**：在 enhance-mode 中配合实现，午休和晚间恢复正常回复频率，深夜/上课时段降低主动回复概率
-
-## 数据复盘
-
-> _待补充：运行天数、使用人数、消息量峰值、衰退曲线。_
-
-**初步观察：** 早期用户因新鲜感使用频率较高，新鲜感消退后使用意愿明显下降。
-在熟人社交（QQ）场景中，AI 聊天机器人缺乏持续使用的刚性需求，
-娱乐向机器人的留存率有天然上限。
-
-## 欢迎继续开发
-
-如果你有兴趣在此基础上继续，以下方向值得探索：
-
-- 增加定时推送、群公告、签到等实用功能
-- 接入更多 LLM 后端（Claude、Gemini 等）
-- 做更完善的角色人格配置和跨会话记忆机制
-- 改造为多账号 / 多群管理模板
-
-欢迎 Fork 或提 Issue。
-
----
-
-## 项目结构
+## Project structure
 
 ```text
 .
@@ -161,20 +171,20 @@ AstrBot 默认 SQLite journal 模式在并发写入时偶发 `database is locked
 ├── README.md
 ├── LICENSE
 ├── scripts/
-│   ├── start.ps1        # Windows：支持 -Build 参数
+│   ├── start.ps1        # Windows: supports -Build
 │   ├── stop.ps1
-│   ├── start.sh         # Linux/macOS：支持 --build / -b 参数
+│   ├── start.sh         # Linux/macOS: supports --build / -b
 │   └── stop.sh
 ├── patches/
-│   ├── astrbot-sqlite-wal/       # AstrBot SQLite WAL 模式优化
+│   ├── astrbot-sqlite-wal/       # AstrBot SQLite WAL tuning
 │   │   ├── PATCH.md
 │   │   └── sqlite.py
-│   └── custome-segment-reply/    # 分段回复插件图片兼容修复
+│   └── custome-segment-reply/    # Segmented-reply image compatibility fix
 │       └── PATCH.md
 ├── plugins/
-│   ├── enhance-mode/    # 骚扰防护：LLM 审核层 + 渐进式封禁 + 时段概率门（改自 astrbot_plugin_astrbot_enhance_mode）
-│   ├── mface-capture/   # QQ 表情采集插件（原创）
-│   └── life-scheduler/  # 角色日程注入：作息骨架 + 角色事件系统（改自 astrbot_plugin_life_scheduler）
+│   ├── enhance-mode/    # Safety funnel + progressive enforcement + time windows
+│   ├── mface-capture/   # Original QQ sticker-capture plugin
+│   └── life-scheduler/  # Schedule injection + character events
 ├── docs/
 │   └── 表情系统与本地补丁记录_2026-05-15.md
 ├── data/
@@ -183,263 +193,263 @@ AstrBot 默认 SQLite journal 模式在并发写入时偶发 `database is locked
 └── ntqq/
 ```
 
-目录用途：
+Directory purpose:
 
-- `data/`：AstrBot 持久化数据。
-- `napcat/config/`：NapCat 配置。
-- `ntqq/`：QQ 登录状态和缓存。
-- `patches/`：对上游容器镜像的改动记录，可按需挂载。
-- `.env`：本地私密配置文件，已被 `.gitignore` 忽略。
+- `data/`: AstrBot persistent data.
+- `napcat/config/`: NapCat configuration.
+- `ntqq/`: QQ login state and cache.
+- `patches/`: records of changes to upstream container images; mount them when needed.
+- `.env`: local private configuration, ignored by `.gitignore`.
 
-## 1. 安装 Docker Desktop
+## 1. Install Docker Desktop
 
-Windows / macOS：
+Windows / macOS:
 
-1. 从 [Docker Desktop 官网](https://www.docker.com/products/docker-desktop/) 下载并安装。
-2. 启动 Docker Desktop。
-3. 确认 Docker Engine 正在运行。
+1. Download and install [Docker Desktop](https://www.docker.com/products/docker-desktop/).
+2. Start Docker Desktop.
+3. Confirm that Docker Engine is running.
 
-Linux：
+Linux:
 
-1. 按 Docker 官方文档安装 Docker Engine 和 Docker Compose 插件。
-2. 确认当前用户可以运行 `docker compose version`。
+1. Follow Docker's official documentation to install Docker Engine and the Docker Compose plugin.
+2. Confirm that the current user can run `docker compose version`.
 
-## 2. 准备环境文件
+## 2. Prepare the environment file
 
-复制模板：
+Copy the template:
 
-Windows PowerShell：
+Windows PowerShell:
 
 ```powershell
 Copy-Item .env.example .env
 ```
 
-Linux/macOS：
+Linux/macOS:
 
 ```sh
 cp .env.example .env
 ```
 
-然后打开 `.env`，只保留或修改你需要的值。不要把真实 API Key 写进 `.env.example`。
+Then open `.env` and retain or change only the values you need. Do not put real API keys in `.env.example`.
 
-Linux/macOS 推荐把 `NAPCAT_UID` 和 `NAPCAT_GID` 改成：
+On Linux/macOS, set `NAPCAT_UID` and `NAPCAT_GID` to:
 
 ```sh
 id -u
 id -g
 ```
 
-## 3. 启动服务
+## 3. Start the services
 
-首次启动会拉取 Docker 镜像，需要网络。请在你确认允许联网后手动运行。
+The first start pulls Docker images and requires network access. Run it manually only after you have decided to allow network access.
 
-Windows PowerShell：
+Windows PowerShell:
 
 ```powershell
 .\scripts\start.ps1
-# 强制重新构建镜像：.\scripts\start.ps1 -Build
+# Force an image rebuild: .\scripts\start.ps1 -Build
 ```
 
-Linux/macOS：
+Linux/macOS:
 
 ```sh
 chmod +x scripts/start.sh scripts/stop.sh
 ./scripts/start.sh
-# 强制重新构建镜像：./scripts/start.sh --build
+# Force an image rebuild: ./scripts/start.sh --build
 ```
 
-也可以直接运行：
+You can also run:
 
 ```sh
 docker compose --env-file .env up -d
 ```
 
-查看日志：
+View logs:
 
 ```sh
 docker compose logs -f astrbot
 docker compose logs -f napcat
 ```
 
-## 4. 打开 AstrBot WebUI
+## 4. Open the AstrBot WebUI
 
-浏览器打开：
+Open in a browser:
 
 ```text
 http://localhost:6185
 ```
 
-默认账号密码：
+Default credentials:
 
 ```text
-用户名：astrbot
-密码：astrbot
+Username: astrbot
+Password: astrbot
 ```
 
-首次登录后建议立即修改管理密码。
+Change the administrator password immediately after the first login.
 
-## 5. 登录 NapCatQQ
+## 5. Log in to NapCatQQ
 
-浏览器打开：
+Open in a browser:
 
 ```text
 http://localhost:6099/webui
 ```
 
-如果页面需要 token，请查看 NapCat 日志：
+If the page requires a token, view the NapCat logs:
 
 ```sh
 docker compose logs -f napcat
 ```
 
-使用 QQ 小号扫码登录。不要使用主账号测试自动回复。
+Log in by scanning the QR code with a dedicated QQ bot account. Do not test automated replies with your primary account.
 
-## 6. 配置 OneBot v11 连接
+## 6. Configure the OneBot v11 connection
 
-在 AstrBot WebUI：
+In the AstrBot WebUI:
 
-1. 进入左侧 `机器人`。
-2. 点击 `+ 创建机器人`。
-3. 选择 `OneBot v11`。
-4. `ID` 可填写 `napcat-local`。
-5. 勾选启用。
-6. 反向 WebSocket 主机地址填写 `0.0.0.0`。
-7. 反向 WebSocket 端口填写 `6199`。
-8. 如果你设置了 token，AstrBot 和 NapCat 两边必须一致；未设置则留空。
-9. 保存。
+1. Open `Bots` in the left sidebar.
+2. Click `+ Create Bot`.
+3. Choose `OneBot v11`.
+4. Set `ID` to `napcat-local` if desired.
+5. Enable it.
+6. Set the reverse WebSocket host address to `0.0.0.0`.
+7. Set the reverse WebSocket port to `6199`.
+8. If a token is configured, it must match on both AstrBot and NapCat; otherwise leave it empty.
+9. Save.
 
-在 NapCat WebUI：
+In the NapCat WebUI:
 
-1. 进入 `网络配置`。
-2. 新建连接，选择 `WebSockets客户端`。
-3. 勾选启用。
-4. URL 填写：
+1. Open `Network Configuration`.
+2. Create a connection and choose `WebSockets Client`.
+3. Enable it.
+4. Set the URL to:
 
 ```text
 ws://astrbot:6199/ws
 ```
 
-5. 心跳间隔和重连间隔可先设置为 `1000` 毫秒。
-6. 保存。
+5. Set the heartbeat and reconnect intervals to `1000` milliseconds initially.
+6. Save.
 
-连接成功后，在 AstrBot 控制台应能看到类似 `aiocqhttp(OneBot v11) 适配器已连接` 的日志。
+After the connection succeeds, the AstrBot console should show a log similar to `aiocqhttp(OneBot v11) adapter connected`.
 
-说明：`docker-compose.yml` 没有把 `6199` 暴露到宿主机，只让 NapCat 和 AstrBot 在 Compose 内部网络通信。这样更适合本地安全测试。
+`docker-compose.yml` does not expose `6199` to the host. NapCat and AstrBot communicate only on the Compose-internal network, which is safer for local testing.
 
-## 7. 配置 LLM 提供商
+## 7. Configure an LLM provider
 
-在 AstrBot WebUI 中进入服务提供商或大语言模型配置页面，按你的提供商新增配置。
+In the AstrBot WebUI, open the provider or large-language-model configuration page and create a configuration for your provider.
 
-OpenAI 兼容 API / DeepSeek：
+OpenAI-compatible API / DeepSeek:
 
-- 类型通常选择 OpenAI 或 OpenAI 兼容格式。
-- API Key 使用你自己的密钥。
-- API Base URL 按服务商文档填写，例如 DeepSeek 官方控制台给出的 OpenAI 兼容地址。
-- 模型名填写服务商提供的模型 ID。
+- Choose an OpenAI or OpenAI-compatible format when applicable.
+- Use your own API key.
+- Set the API Base URL according to the provider documentation, for example the OpenAI-compatible address from the DeepSeek console.
+- Enter the model ID supplied by the provider.
 
-本地 Ollama：
+Local Ollama:
 
-1. 在宿主机安装 Ollama。
-2. 拉取并运行模型，例如：
+1. Install Ollama on the host.
+2. Pull and run a model, for example:
 
 ```sh
 ollama pull deepseek-r1:8b
 ollama run deepseek-r1:8b
 ```
 
-3. 如果 AstrBot 运行在 Windows/macOS Docker Desktop 中，API Base URL 通常填写：
+3. When AstrBot runs in Docker Desktop on Windows/macOS, the API Base URL is usually:
 
 ```text
 http://host.docker.internal:11434/v1
 ```
 
-4. Linux Docker 环境可参考 AstrBot 官方 Ollama 文档，常见写法是：
+4. For Linux Docker, refer to AstrBot's official Ollama documentation. A common value is:
 
 ```text
 http://172.17.0.1:11434/v1
 ```
 
-## 8. 测试私聊和群聊
+## 8. Test direct and group chats
 
-私聊测试：
+Direct-chat test:
 
-1. 用另一个 QQ 账号给机器人小号发送一句简单消息。
-2. 查看 AstrBot 控制台是否收到事件。
-3. 确认机器人是否按预期回复。
+1. Send a simple message to the QQ bot account from another QQ account.
+2. Confirm that AstrBot receives the event in its console.
+3. Confirm that the bot replies as expected.
 
-群聊测试：
+Group-chat test:
 
-1. 把 QQ 小号加入测试群。
-2. 先在小群中测试，不要直接放进大群。
-3. 根据 AstrBot 的唤醒词、权限和插件设置测试回复。
-4. 观察是否有刷屏、重复回复或权限问题。
+1. Add the QQ bot account to a test group.
+2. Test in a small group first; do not place it directly in a large group.
+3. Test replies using AstrBot's wake-word, permission, and plugin settings.
+4. Watch for flooding, duplicate replies, or permission issues.
 
-## 9. 停止服务
+## 9. Stop the services
 
-Windows PowerShell：
+Windows PowerShell:
 
 ```powershell
 .\scripts\stop.ps1
 ```
 
-Linux/macOS：
+Linux/macOS:
 
 ```sh
 ./scripts/stop.sh
 ```
 
-或直接运行：
+Or run:
 
 ```sh
 docker compose --env-file .env down
 ```
 
-## 安全建议
+## Security guide
 
-- 使用 QQ 小号，不要使用主账号。
-- 不要把 AstrBot WebUI、NapCat WebUI 或 OneBot 端口暴露到公网。
-- 本模板默认只把 WebUI 端口绑定到 `127.0.0.1`。
-- API Key 只放在 `.env` 或 AstrBot 本地配置中，不要写入 README、脚本或 `.env.example`。
-- 不要上传 `.env` 到 GitHub；本项目已在 `.gitignore` 中忽略 `.env`。
-- 为机器人回复设置频率限制，先在小范围测试。
-- 初期禁用高风险插件，尤其是能执行命令、访问文件、主动联网或批量发消息的插件。
-- WebUI 默认密码仅用于首次登录，启动后应立即修改。
-- 如果配置 OneBot token，请使用随机长字符串，并确保 AstrBot 和 NapCat 两端一致。
+- Use a dedicated QQ bot account, not your primary account.
+- Do not expose AstrBot WebUI, NapCat WebUI, or OneBot ports to the public internet.
+- This template binds WebUI ports only to `127.0.0.1` by default.
+- Store API keys only in `.env` or AstrBot local configuration; never place them in this README, scripts, or `.env.example`.
+- Do not upload `.env` to GitHub; this project ignores it through `.gitignore`.
+- Apply reply rate limits and test within a small audience first.
+- Initially disable high-risk plugins, especially those that can execute commands, access files, browse the web, or send messages in bulk.
+- The WebUI default password is for first login only; change it immediately after startup.
+- When using a OneBot token, use a long random string and ensure it matches in AstrBot and NapCat.
 
-## 常见问题
+## Troubleshooting
 
-### NapCat 连不上 AstrBot
+### NapCat cannot connect to AstrBot
 
-检查：
+Check:
 
-- AstrBot OneBot v11 机器人是否已启用。
-- AstrBot 反向 WebSocket 端口是否是 `6199`。
-- NapCat WebSocket 客户端 URL 是否是 `ws://astrbot:6199/ws`。
-- 两个容器是否都在运行：`docker compose ps`。
-- AstrBot 控制台是否有连接或超时日志。
+- The AstrBot OneBot v11 bot is enabled.
+- The AstrBot reverse WebSocket port is `6199`.
+- The NapCat WebSocket client URL is `ws://astrbot:6199/ws`.
+- Both containers are running: `docker compose ps`.
+- The AstrBot console for connection or timeout logs.
 
-### 浏览器打不开 WebUI
+### The browser cannot open a WebUI
 
-检查：
+Check:
 
-- Docker Desktop 是否运行。
-- 容器是否启动：`docker compose ps`。
-- 本机端口是否被占用。
-- 如果你改了 `.env` 中的端口，请使用改后的端口访问。
+- Docker Desktop is running.
+- The containers are up: `docker compose ps`.
+- The local port is not already in use.
+- If you changed a port in `.env`, use the changed port in the browser.
 
-### 不想暴露任何 WebUI 到局域网
+### Keep every WebUI off the LAN
 
-保持 `docker-compose.yml` 中的端口绑定为 `127.0.0.1:端口:容器端口`。不要改成 `0.0.0.0:端口:容器端口` 或 `端口:容器端口`，除非你明确知道风险。
+Keep the port bindings in `docker-compose.yml` as `127.0.0.1:host-port:container-port`. Do not change them to `0.0.0.0:host-port:container-port` or `host-port:container-port` unless you fully understand the security implications.
 
-## 参考链接
+## References
 
-- [AstrBot Docker 部署](https://docs.astrbot.app/deploy/astrbot/docker.html)
-- [AstrBot 接入 OneBot v11](https://docs.astrbot.app/platform/aiocqhttp.html)
-- [AstrBot 管理面板](https://docs.astrbot.app/use/webui.html)
-- [AstrBot 接入模型服务](https://docs.astrbot.app/en/config/providers/start.html)
-- [AstrBot 接入 Ollama](https://docs.astrbot.app/config/providers/provider-ollama.html)
-- [NapCatQQ OneBot 网络基础](https://www.napcat.wiki/onebot/network)
-- [NapCat-Docker 官方 Compose 模板](https://raw.githubusercontent.com/NapNeko/NapCat-Docker/main/compose/astrbot.yml)
+- [AstrBot Docker deployment](https://docs.astrbot.app/deploy/astrbot/docker.html)
+- [AstrBot OneBot v11](https://docs.astrbot.app/platform/aiocqhttp.html)
+- [AstrBot management panel](https://docs.astrbot.app/use/webui.html)
+- [AstrBot model providers](https://docs.astrbot.app/en/config/providers/start.html)
+- [AstrBot Ollama](https://docs.astrbot.app/config/providers/provider-ollama.html)
+- [NapCatQQ OneBot network basics](https://www.napcat.wiki/onebot/network)
+- [NapCat-Docker Compose template](https://raw.githubusercontent.com/NapNeko/NapCat-Docker/main/compose/astrbot.yml)
 
 ## License
 
