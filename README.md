@@ -35,7 +35,7 @@ The result is a reusable platform pattern for multi-user conversational agents: 
 - A multi-layer safety and interaction funnel: allow/deny enforcement, harassment interception, independent intent classification, progressive penalties, and time-window reply controls.
 - A from-scratch web data collection and knowledge-preparation pipeline for persona-grounded retrieval.
 - Time-aware, random-event persona behavior that keeps schedules and events within character constraints.
-- [`plugins/mface-capture/`](plugins/mface-capture/), a QQ sticker-capture replacement plugin whose JSONL metadata omits chat text and sender IDs, and which supports emotion-label review. Optional local media capture requires operator consent and retention controls.
+- [`plugins/mface-capture/`](plugins/mface-capture/), a QQ sticker-capture replacement plugin whose JSONL metadata omits chat text and sender IDs, and which supports emotion-label review. For deployments that enable optional local media capture, operator consent and retention controls are operational requirements; they are not enforced access controls in the plugin.
 - Tests and operational configuration for JSONL metadata omission, label binding, state expiry, isolation, local-only interfaces, container readiness, and SQLite behavior.
 
 **Substantial extensions inspired by upstream AstrBot plugins**
