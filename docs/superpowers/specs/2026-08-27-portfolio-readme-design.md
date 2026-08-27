@@ -2,7 +2,7 @@
 
 ## Goal
 
-Reposition the repository as an Applied AI portfolio project: a multi-channel, multi-user AI chatbot platform with a QQ reference deployment and a validated Discord deployment. The project should demonstrate AI-system design, user-informed iteration, and backend reliability without overstating channel coverage or code ownership.
+Reposition the repository as a strong Applied AI portfolio project: a multi-channel, multi-user AI chatbot platform with a production-tested QQ deployment and a validated Discord deployment. The project should lead with AI-system design, user-informed iteration, and backend reliability while keeping channel coverage and code ownership factual.
 
 ## Repository metadata
 
@@ -23,10 +23,10 @@ Reposition the repository as an Applied AI portfolio project: a multi-channel, m
 
 The English README will distinguish the scope of each claim:
 
-- QQ is the long-running reference deployment: a 5,000+ member community, 5,689 requests over 22 days, and 300+ active users during that period.
-- Discord was end-to-end validated for connection, message reception, and model-backed replies, but has no long-running operational claim.
+- QQ is the production-tested reference deployment: a 5,000+ member community, 5,689 requests over 22 days, and 300+ active users during that period.
+- Discord was end-to-end deployed and validated for connection, message reception, and model-backed replies. README language will distinguish this from the longer QQ operating record.
 - The platform architecture can extend to channels supported by AstrBot; the repository will not claim that all supported channels have ready-to-use deployment configurations.
-- SQLite WAL and targeted PRAGMA tuning eliminated observed `database is locked` failures during subsequent operation. The README will not claim a generic throughput increase.
+- SQLite WAL and targeted PRAGMA tuning solved observed `database is locked` failures under multi-user load, without adding infrastructure. The README will not claim an unmeasured throughput percentage.
 - A user-feedback survey collected 25 responses from 44 views (56% response rate). README evidence will be limited to anonymized aggregate findings: 64% valued reliable reactive replies and 60% valued persistent group preferences and memories.
 
 ## Ownership and attribution
