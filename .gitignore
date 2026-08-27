@@ -16,3 +16,6 @@ scripts/__pycache__/
 .claude/
 *.pyc
 .worktrees/
+
+# Raw survey exports may contain respondent metadata.
+数据分析/267*.csv
